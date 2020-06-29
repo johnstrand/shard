@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Pipeline name="Test">
+  <Producer type="file">
+    <Directory>#{basePath}/biztalk/till_bokrondellen/artikel/ONIX</Directory>
+    <Pattern>*.xml</Pattern>
+  </Producer>
+  <Plugins>
+    <XPathValidation>
+      <Query>boolean(/*[local-name()='ONIXMessage' and namespace-uri()='http://ns.editeur.org/onix/3.0/reference']/*[local-name()='Product' and namespace-uri()='http://ns.editeur.org/onix/3.0/reference'])</Query>
+    </XPathValidation>
+    <ApplyXslt>
+      <Map>Article.ONIX_to_EPi</Map>
+      <Extensions>
+        <Extension>http://mapperservice.dekiru.se/mapperextensions/xreferenceserviceclient</Extension>
+        <Extension>http://mapperservice.dekiru.se/mapperextensions/onix_to_epi</Extension>
+      </Extensions>
+    </ApplyXslt>
+    <ApplyXslt>
+      <Map>Article.EPi_to_EPi</Map>
+      <Extensions>
+        <Extension>http://mapperservice.dekiru.se/mapperextensions/xreferenceserviceclient</Extension>
+        <Extension>http://mapperservice.dekiru.se/mapperextensions/epi_to_epi</Extension>
+      </Extensions>
+    </ApplyXslt>
+  </Plugins>
+  <Consumers>
+    <Consumer type="file">
+      <Directory>#{baseBath}/br101/xmldiff</Directory>
+      <FileName>art_${filename}</FileName>
+    </Consumer>
+  </Consumers>
+</Pipeline>

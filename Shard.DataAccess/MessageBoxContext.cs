@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LiteDB;
@@ -19,6 +20,13 @@ namespace Shard.DataAccess
         this.pipeline = pipeline;
         this.wrappedContext = wrappedContext;
       }
+
+      public void Submit(Stage stage, object properties, Stream data, Guid? originalId = null)
+      {
+        var props = properties.GetType().GetProperties().ToDictionary(p => p.Name, p => p.GetValue(properties)?.ToString() ?? "");
+        wrappedContext.Submit(pipeline, stage, props, data, originalId);
+      }
+
       public void Submit(Stage stage, Dictionary<string, string> properties, Stream data, Guid? originalId = null)
       {
         wrappedContext.Submit(pipeline, stage, properties, data, originalId);
@@ -46,7 +54,7 @@ namespace Shard.DataAccess
     private readonly ILiteStorage<Guid> storage;
     private readonly Dictionary<string, BlockingCollection<Guid>> pending = new Dictionary<string, BlockingCollection<Guid>>();
     private CancellationToken token;
-    public static MessageBoxContext Context { get; } = new MessageBoxContext();
+    private static MessageBoxContext context = new MessageBoxContext();
     private MessageBoxContext()
     {
       var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Shard");
@@ -59,14 +67,14 @@ namespace Shard.DataAccess
 
     public static Instance GetInstance(string pipeline, CancellationToken token)
     {
-      Context.pending.Add(pipeline, new BlockingCollection<Guid>());
+      context.pending.Add(pipeline, new BlockingCollection<Guid>());
 
-      foreach (var message in Context.messages.Find(m => !m.Completed && !m.Suspended && m.Pipeline == pipeline))
+      foreach (var message in context.messages.Find(m => !m.Completed && !m.Suspended && m.Pipeline == pipeline))
       {
-        Context.pending[message.Pipeline].Add(message.Id, token);
+        context.pending[message.Pipeline].Add(message.Id, token);
       }
 
-      return new Instance(pipeline, Context);
+      return new Instance(pipeline, context);
     }
 
     private void Submit(string pipeline, Stage stage, Dictionary<string, string> properties, Stream data, Guid? originalId = null)

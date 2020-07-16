@@ -10,5 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Shard.DataAccess/Shard.DataAccess.csproj" />
+    <ProjectReference Include="..\Shard.Scripting\Shard.Scripting.csproj" />
   </ItemGroup>
 </Project>
